@@ -1,0 +1,60 @@
+[
+  {
+    "customerName": "Test Customer",
+    "phone": "03001234567",
+    "address": "Near Sarawan Fast Food, Karachi",
+    "items": [
+      {
+        "id": "oi-1789908985424-teik",
+        "menuItemId": "chicken-biryani",
+        "name": "Chicken Biryani",
+        "category": "General",
+        "price": 280,
+        "quantity": 1
+      }
+    ],
+    "subtotal": 280,
+    "deliveryFee": 150,
+    "total": 430,
+    "id": "SW-9945",
+    "status": "NEW",
+    "createdAt": "2026-09-20T12:56:25.424Z",
+    "updatedAt": "2026-09-20T12:56:25.424Z",
+    "acknowledgedByReception": false,
+    "estimatedDeliveryTime": "35 - 45 Mins"
+  },
+  {
+    "customerName": "Kamran Khan",
+    "phone": "0301-7654321",
+    "address": "House 14-B, Street 3, G-11/2",
+    "notes": "Extra raita and salad please",
+    "items": [
+      {
+        "id": "oi-1789852745086-416a",
+        "menuItemId": "biryani-chicken",
+        "name": "Chicken Biryani (Half kg)",
+        "category": "Biryani & Pulao",
+        "price": 280,
+        "quantity": 2
+      },
+      {
+        "id": "oi-1789852745086-b7yx",
+        "menuItemId": "karahi-shinwari-chicken",
+        "name": "Shinwari Chicken Karahi",
+        "category": "Chicken Karahi",
+        "selectedVariantName": "Half kg",
+        "price": 850,
+        "quantity": 1
+      }
+    ],
+    "subtotal": 1410,
+    "deliveryFee": 150,
+    "total": 1560,
+    "id": "SW-9289",
+    "status": "ACCEPTED",
+    "createdAt": "2026-09-19T21:19:05.086Z",
+    "updatedAt": "2026-09-19T21:19:19.196Z",
+    "acknowledgedByReception": true,
+    "estimatedDeliveryTime": "35 - 45 Mins"
+  }
+]

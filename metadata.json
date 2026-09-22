@@ -1,0 +1,6 @@
+{
+  "name": "Sarawan",
+  "description": "Official website and real-time online ordering system for Sarawan with live receptionist dispatch and order management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
