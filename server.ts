@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
 import { db } from './server/db';
 import { OrderStatus } from './src/types';
 
@@ -77,7 +76,7 @@ function broadcastToReception(eventType: string, data: any) {
 }
 
 // Send periodic heartbeat to keep SSE alive
-setInterval(() => {
+const heartbeatTimer = setInterval(() => {
   for (const client of receptionClients) {
     try {
       client.write(': heartbeat\n\n');
@@ -86,6 +85,9 @@ setInterval(() => {
     }
   }
 }, 20000);
+if (heartbeatTimer.unref) {
+  heartbeatTimer.unref();
+}
 
 // ==========================================
 // PUBLIC API ROUTES
@@ -342,6 +344,7 @@ app.patch('/api/admin/config', requireReceptionist, (req: Request, res: Response
 
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

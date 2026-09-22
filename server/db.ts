@@ -10,14 +10,20 @@ const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Warning: Could not create data directory, using in-memory mode:', err);
 }
 
 function safeReadJSON<T>(filePath: string, fallback: T): T {
   try {
     if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2), 'utf-8');
+      try {
+        fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2), 'utf-8');
+      } catch {}
       return fallback;
     }
     const raw = fs.readFileSync(filePath, 'utf-8');
@@ -34,13 +40,12 @@ function safeWriteJSON<T>(filePath: string, data: T): void {
     fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tempPath, filePath);
   } catch (error) {
-    console.error(`Error writing ${filePath}:`, error);
+    console.error(`Warning: Failed writing persistence file ${filePath}:`, error);
     if (fs.existsSync(tempPath)) {
       try {
         fs.unlinkSync(tempPath);
       } catch {}
     }
-    throw error;
   }
 }
 
