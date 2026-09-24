@@ -1,16 +1,313 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { db } from './server/db';
-import { OrderStatus } from './src/types';
+import { INITIAL_MENU_ITEMS } from './src/data/initialMenuData';
 
 dotenv.config();
 
+export type OrderStatus =
+  | 'NEW'
+  | 'ACCEPTED'
+  | 'PREPARING'
+  | 'OUT_FOR_DELIVERY'
+  | 'ON_THE_WAY'
+  | 'COMPLETED'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export interface MenuItemVariant {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  image?: string;
+  available: boolean;
+  isPopular?: boolean;
+  isSpecial?: boolean;
+  variants?: MenuItemVariant[];
+}
+
+export interface OrderItem {
+  menuItemId: string;
+  name: string;
+  category?: string;
+  selectedVariantName?: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  notes?: string;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+  estimatedDeliveryTime?: string;
+  acknowledgedByReception?: boolean;
+}
+
+export interface RestaurantConfig {
+  name: string;
+  phone: string;
+  whatsapp: string;
+  address: string;
+  openingHours: string;
+  deliveryFee: number;
+  minOrderAmount: number;
+  estimatedTime: string;
+  isAcceptingOrders: boolean;
+  currency: string;
+}
+
+// Default restaurant config fallback
+const DEFAULT_CONFIG: RestaurantConfig = {
+  name: 'Sarawan',
+  phone: '0335-3131686',
+  whatsapp: '0335-3131686',
+  address: 'Sarawan Fast Food, Karachi',
+  openingHours: '12:00 PM - 02:00 AM (Open 7 Days a Week)',
+  deliveryFee: 150,
+  minOrderAmount: 300,
+  estimatedTime: '35 - 45 Mins',
+  isAcceptingOrders: true,
+  currency: 'Rs.',
+};
+
+// Data persistence paths
+const BASE_DATA_DIR = process.env.VERCEL ? path.join('/tmp', 'sarawan_data') : path.join(process.cwd(), 'data');
+const DATA_DIR = BASE_DATA_DIR;
+const MENU_FILE = path.join(DATA_DIR, 'menu.json');
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Warning: Could not create data directory, using in-memory mode:', err);
+}
+
+function safeReadJSON<T>(filePath: string, fallback: T): T {
+  try {
+    if (!fs.existsSync(filePath)) {
+      try {
+        fs.writeFileSync(filePath, JSON.stringify(fallback, null, 2), 'utf-8');
+      } catch {}
+      return fallback;
+    }
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.error(`Error reading ${filePath}, falling back to default:`, error);
+    return fallback;
+  }
+}
+
+function safeWriteJSON<T>(filePath: string, data: T): void {
+  const tempPath = `${filePath}.tmp.${Date.now()}`;
+  try {
+    fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempPath, filePath);
+  } catch (error) {
+    console.error(`Warning: Failed writing persistence file ${filePath}:`, error);
+    if (fs.existsSync(tempPath)) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch {}
+    }
+  }
+}
+
+// In-memory cache synced with disk
+const ROOT_MENU_FILE = path.join(process.cwd(), 'new_menu_137.json');
+let menuCache: MenuItem[] = [];
+
+try {
+  const persisted = safeReadJSON<MenuItem[]>(MENU_FILE, []);
+  if (Array.isArray(persisted) && persisted.length > 0) {
+    menuCache = persisted;
+  }
+} catch (e) {
+  console.warn('Could not read persisted menu file:', e);
+}
+
+// Fallback to root file or bundled data
+if (menuCache.length === 0) {
+  try {
+    if (fs.existsSync(ROOT_MENU_FILE)) {
+      const rawRoot = fs.readFileSync(ROOT_MENU_FILE, 'utf-8');
+      const parsed = JSON.parse(rawRoot);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        menuCache = parsed;
+        safeWriteJSON(MENU_FILE, menuCache);
+      }
+    }
+  } catch (e) {
+    console.warn('Could not read root menu file:', e);
+  }
+}
+
+// Ultimate fallback: bundled 137 items (works 100% on Vercel and serverless)
+if (menuCache.length === 0 && Array.isArray(INITIAL_MENU_ITEMS) && INITIAL_MENU_ITEMS.length > 0) {
+  menuCache = [...(INITIAL_MENU_ITEMS as unknown as MenuItem[])];
+  safeWriteJSON(MENU_FILE, menuCache);
+}
+
+let ordersCache: Order[] = safeReadJSON<Order[]>(ORDERS_FILE, []);
+let configCache: RestaurantConfig = safeReadJSON<RestaurantConfig>(CONFIG_FILE, DEFAULT_CONFIG);
+
+if (configCache.phone !== DEFAULT_CONFIG.phone) {
+  configCache = { ...configCache, phone: DEFAULT_CONFIG.phone, whatsapp: DEFAULT_CONFIG.whatsapp };
+  safeWriteJSON(CONFIG_FILE, configCache);
+}
+
+const db = {
+  getMenu(): MenuItem[] {
+    return menuCache;
+  },
+  getMenuItem(id: string): MenuItem | undefined {
+    return menuCache.find((m) => m.id === id);
+  },
+  addMenuItem(item: Omit<MenuItem, 'id'>): MenuItem {
+    const newItem: MenuItem = {
+      ...item,
+      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
+    menuCache.unshift(newItem);
+    safeWriteJSON(MENU_FILE, menuCache);
+    return newItem;
+  },
+  updateMenuItem(id: string, updates: Partial<MenuItem>): MenuItem | null {
+    const index = menuCache.findIndex((m) => m.id === id);
+    if (index === -1) return null;
+    menuCache[index] = { ...menuCache[index], ...updates };
+    safeWriteJSON(MENU_FILE, menuCache);
+    return menuCache[index];
+  },
+  deleteMenuItem(id: string): boolean {
+    const prevLen = menuCache.length;
+    menuCache = menuCache.filter((m) => m.id !== id);
+    if (menuCache.length !== prevLen) {
+      safeWriteJSON(MENU_FILE, menuCache);
+      return true;
+    }
+    return false;
+  },
+  toggleMenuItemAvailability(id: string): MenuItem | null {
+    const index = menuCache.findIndex((m) => m.id === id);
+    if (index === -1) return null;
+    menuCache[index].available = !menuCache[index].available;
+    safeWriteJSON(MENU_FILE, menuCache);
+    return menuCache[index];
+  },
+  getOrders(): Order[] {
+    return [...ordersCache].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  },
+  getOrderById(id: string): Order | undefined {
+    return ordersCache.find((o) => o.id.toLowerCase() === id.toLowerCase());
+  },
+  createOrder(orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Order {
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const id = `SW-${randomDigits}`;
+    const now = new Date().toISOString();
+    const newOrder: Order = {
+      ...orderData,
+      id,
+      status: 'NEW',
+      createdAt: now,
+      updatedAt: now,
+      acknowledgedByReception: false,
+      estimatedDeliveryTime: configCache.estimatedTime || '35 - 45 Mins',
+    };
+    ordersCache.unshift(newOrder);
+    safeWriteJSON(ORDERS_FILE, ordersCache);
+    return newOrder;
+  },
+  updateOrderStatus(id: string, status: OrderStatus): Order | null {
+    const index = ordersCache.findIndex((o) => o.id.toLowerCase() === id.toLowerCase());
+    if (index === -1) return null;
+    ordersCache[index] = {
+      ...ordersCache[index],
+      status,
+      updatedAt: new Date().toISOString(),
+      acknowledgedByReception: true,
+    };
+    safeWriteJSON(ORDERS_FILE, ordersCache);
+    return ordersCache[index];
+  },
+  acknowledgeOrder(id: string): Order | null {
+    const index = ordersCache.findIndex((o) => o.id.toLowerCase() === id.toLowerCase());
+    if (index === -1) return null;
+    ordersCache[index] = {
+      ...ordersCache[index],
+      acknowledgedByReception: true,
+    };
+    safeWriteJSON(ORDERS_FILE, ordersCache);
+    return ordersCache[index];
+  },
+  getConfig(): RestaurantConfig {
+    return configCache;
+  },
+  updateConfig(updates: Partial<RestaurantConfig>): RestaurantConfig {
+    configCache = { ...configCache, ...updates };
+    safeWriteJSON(CONFIG_FILE, configCache);
+    return configCache;
+  },
+};
+
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+
+// Enable CORS for external previews & clients
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
+// Normalize request URL for serverless / proxy rewrites
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!req.url.startsWith('/api/') && req.url !== '/api') {
+    if (
+      req.url.startsWith('/menu') ||
+      req.url.startsWith('/orders') ||
+      req.url.startsWith('/config') ||
+      req.url.startsWith('/auth') ||
+      req.url.startsWith('/health') ||
+      req.url.startsWith('/admin')
+    ) {
+      req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
+    }
+  }
+  next();
+});
 
 // Security credentials
 const RECEPTIONIST_USER = process.env.RECEPTIONIST_USERNAME || 'admin';
@@ -338,6 +635,16 @@ app.patch('/api/admin/config', requireReceptionist, (req: Request, res: Response
   res.json({ success: true, config: updated });
 });
 
+// Explicit 404 handler for unmatched API routes
+app.all('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ error: 'API route not found' });
+});
+
+// Static assets serving
+app.use(express.static(path.join(process.cwd(), 'public')));
+app.use('/src/assets/images', express.static(path.join(process.cwd(), 'src/assets/images')));
+app.use('/assets/images', express.static(path.join(process.cwd(), 'src/assets/images')));
+
 // ==========================================
 // VITE DEV & PROD ASSET SERVING
 // ==========================================
@@ -346,7 +653,10 @@ async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -358,9 +668,18 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Sarawan Server listening on http://0.0.0.0:${PORT}`);
-  });
+  // Only listen when running directly in standalone mode (not when imported as a serverless function)
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Sarawan Server listening on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
-startServer();
+// Only run standalone Vite dev server or static server when NOT in Vercel serverless environment
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
+export { app };

@@ -1,6 +1,6 @@
 {
   "name": "Sarawan",
-  "description": "Official website and real-time online ordering system for Sarawan with live receptionist dispatch and order management.",
+  "description": "Official website and online ordering system for Sarawan authentic dining, fast food, and doorstep delivery.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

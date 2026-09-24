@@ -166,6 +166,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-black/20" />
 

@@ -9,47 +9,29 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
-import { OrderTrackerModal } from './components/OrderTrackerModal';
-import { ReceptionLogin } from './components/reception/ReceptionLogin';
-import { ReceptionDashboard } from './components/reception/ReceptionDashboard';
 import { FullMenuPage } from './components/FullMenuPage';
 import { ProductDetailPage } from './components/ProductDetailPage';
+import { WhatsAppFloatingButton } from './components/WhatsAppFloatingButton';
 import { MenuItem, RestaurantConfig, Order } from './types';
 import { INITIAL_MENU, INITIAL_CATEGORIES, DEFAULT_CONFIG } from './data/initialMenu';
-import { Clock, Loader2 } from 'lucide-react';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'customer' | 'reception' | 'full-menu' | 'product'>('customer');
+  const [currentView, setCurrentView] = useState<'customer' | 'full-menu' | 'product'>('customer');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [authToken, setAuthToken] = useState<string | null>(() => {
-    return sessionStorage.getItem('sarwan_reception_token');
-  });
-  const [authUsername, setAuthUsername] = useState<string>('admin');
 
   const [config, setConfig] = useState<RestaurantConfig>(DEFAULT_CONFIG);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU);
   const [categories, setCategories] = useState<string[]>(INITIAL_CATEGORIES);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Active trackable order (from checkout or session)
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
+  // Active placed order (from checkout)
+  const [, setActiveOrder] = useState<Order | null>(null);
 
-  // Check URL pathname or query parameters for explicit separate reception, menu, or product access
+  // Check URL pathname or query parameters for menu or product access
   useEffect(() => {
     const handleRouteChange = () => {
-      // Clear any legacy hash leftover from earlier sessions
-      if (window.location.hash === '#reception') {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-
       const params = new URLSearchParams(window.location.search);
       const pathname = window.location.pathname.replace(/\/$/, '');
-
-      const isReceptionRoute =
-        pathname === '/reception' ||
-        params.get('portal') === 'reception' ||
-        params.get('view') === 'reception';
 
       const isMenuRoute =
         pathname === '/menu' ||
@@ -65,9 +47,7 @@ export default function App() {
 
       const activeProdId = pathProductId || productQueryId;
 
-      if (isReceptionRoute) {
-        setCurrentView('reception');
-      } else if (activeProdId) {
+      if (activeProdId) {
         setSelectedProductId(activeProdId);
         setCurrentView('product');
       } else if (isMenuRoute) {
@@ -122,17 +102,6 @@ export default function App() {
     loadAppData();
   }, []);
 
-  const handleLoginSuccess = (token: string, username: string) => {
-    setAuthToken(token);
-    setAuthUsername(username);
-    sessionStorage.setItem('sarwan_reception_token', token);
-  };
-
-  const handleLogout = () => {
-    setAuthToken(null);
-    sessionStorage.removeItem('sarwan_reception_token');
-  };
-
   const handleNavigateToSection = (sectionId: string) => {
     if (currentView !== 'customer') {
       setCurrentView('customer');
@@ -166,7 +135,6 @@ export default function App() {
   };
 
   const handleBackFromProduct = () => {
-    // If user came from full-menu or customer, go back smoothly
     setCurrentView('customer');
     window.history.pushState(null, '', '/');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -174,21 +142,15 @@ export default function App() {
 
   const handleOrderSuccess = (order: Order) => {
     setActiveOrder(order);
-    setIsTrackerOpen(true);
-  };
-
-  const handleExitReception = () => {
-    setCurrentView('customer');
-    window.history.pushState(null, '', '/');
   };
 
   // Dedicated Product Detail Page View (Daraz / Amazon style)
   const activeProduct = menuItems.find((m) => m.id === selectedProductId) || menuItems[0];
 
-  if (currentView === 'product' && activeProduct) {
-    return (
-      <LanguageProvider>
-        <CartProvider>
+  return (
+    <LanguageProvider>
+      <CartProvider>
+        {currentView === 'product' && activeProduct ? (
           <ProductDetailPage
             item={activeProduct}
             allItems={menuItems}
@@ -198,41 +160,7 @@ export default function App() {
             onNavigateToSection={handleNavigateToSection}
             onOpenFullMenu={handleOpenFullMenu}
           />
-          <CartDrawer config={config} />
-          <CheckoutModal
-            config={config}
-            onOrderSuccess={handleOrderSuccess}
-          />
-          {activeOrder && (
-            <OrderTrackerModal
-              order={activeOrder}
-              config={config}
-              isOpen={isTrackerOpen}
-              onClose={() => setIsTrackerOpen(false)}
-            />
-          )}
-          {/* Floating Quick Tracker Pill */}
-          {activeOrder && !isTrackerOpen && (
-            <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-40 animate-in slide-in-from-bottom-4">
-              <button
-                onClick={() => setIsTrackerOpen(true)}
-                className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-stone-950 px-4 py-3 sm:py-2.5 rounded-2xl shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2.5 font-semibold text-xs border border-amber-400 active:scale-95 transition touch-manipulation"
-              >
-                <Clock className="w-4 h-4 animate-spin text-stone-950 flex-shrink-0" />
-                <span className="truncate">Track Order #{activeOrder.id} ({activeOrder.status})</span>
-              </button>
-            </div>
-          )}
-        </CartProvider>
-      </LanguageProvider>
-    );
-  }
-
-  // Full Categorized Menu Page View
-  if (currentView === 'full-menu') {
-    return (
-      <LanguageProvider>
-        <CartProvider>
+        ) : currentView === 'full-menu' ? (
           <FullMenuPage
             menuItems={menuItems}
             categories={categories}
@@ -240,135 +168,56 @@ export default function App() {
             onBackToHome={handleBackFromFullMenu}
             onSelectProduct={handleSelectProduct}
           />
-          <CartDrawer config={config} />
-          <CheckoutModal
-            config={config}
-            onOrderSuccess={handleOrderSuccess}
-          />
-          {activeOrder && (
-            <OrderTrackerModal
-              order={activeOrder}
+        ) : (
+          <div className="min-h-screen bg-stone-950 text-stone-100 font-sans selection:bg-amber-600 selection:text-white flex flex-col">
+            {/* Navigation Bar */}
+            <Navbar
               config={config}
-              isOpen={isTrackerOpen}
-              onClose={() => setIsTrackerOpen(false)}
+              onNavigateToSection={handleNavigateToSection}
+              onOpenFullMenu={handleOpenFullMenu}
             />
-          )}
-          {/* Floating Quick Tracker Pill */}
-          {activeOrder && !isTrackerOpen && (
-            <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-40 animate-in slide-in-from-bottom-4">
-              <button
-                onClick={() => setIsTrackerOpen(true)}
-                className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-stone-950 px-4 py-3 sm:py-2.5 rounded-2xl shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2.5 font-semibold text-xs border border-amber-400 active:scale-95 transition touch-manipulation"
-              >
-                <Clock className="w-4 h-4 animate-spin text-stone-950 flex-shrink-0" />
-                <span className="truncate">Track Order #{activeOrder.id} ({activeOrder.status})</span>
-              </button>
-            </div>
-          )}
-        </CartProvider>
-      </LanguageProvider>
-    );
-  }
 
-  // Receptionist View (Direct access only via /reception or /#reception)
-  if (currentView === 'reception') {
-    if (!authToken) {
-      return (
-        <ReceptionLogin
-          onLoginSuccess={handleLoginSuccess}
-          onBackToWebsite={handleExitReception}
+            {/* Hero Section */}
+            <Hero
+              config={config}
+              onViewMenu={handleOpenFullMenu}
+              onOrderOnline={() => handleNavigateToSection('menu')}
+            />
+
+            {/* Menu Section */}
+            <MenuSection
+              menuItems={menuItems}
+              categories={categories}
+              onOpenFullMenu={handleOpenFullMenu}
+              onSelectProduct={handleSelectProduct}
+            />
+
+            {/* About Section */}
+            <AboutSection />
+
+            {/* Contact & Delivery Section */}
+            <ContactSection config={config} />
+
+            {/* Footer */}
+            <Footer
+              config={config}
+              onNavigateToSection={handleNavigateToSection}
+              onOpenFullMenu={handleOpenFullMenu}
+            />
+          </div>
+        )}
+
+        {/* Global Cart Drawer */}
+        <CartDrawer config={config} />
+
+        {/* Global Checkout Modal */}
+        <CheckoutModal
+          config={config}
+          onOrderSuccess={handleOrderSuccess}
         />
-      );
-    }
 
-    return (
-      <ReceptionDashboard
-        authToken={authToken}
-        username={authUsername}
-        config={config}
-        menuItems={menuItems}
-        categories={categories}
-        onLogout={handleLogout}
-        onBackToWebsite={handleExitReception}
-        onRefreshMenu={loadAppData}
-      />
-    );
-  }
-
-  // Customer-facing Website (No visible staff/reception buttons or links)
-  return (
-    <LanguageProvider>
-      <CartProvider>
-        <div className="min-h-screen bg-stone-950 text-stone-100 font-sans selection:bg-amber-600 selection:text-white flex flex-col">
-          
-          {/* Navigation Bar */}
-          <Navbar
-            config={config}
-            onNavigateToSection={handleNavigateToSection}
-            onOpenFullMenu={handleOpenFullMenu}
-          />
-
-          {/* Hero Section */}
-          <Hero
-            config={config}
-            onViewMenu={handleOpenFullMenu}
-            onOrderOnline={() => handleNavigateToSection('menu')}
-          />
-
-          {/* Menu Section */}
-          <MenuSection
-            menuItems={menuItems}
-            categories={categories}
-            onOpenFullMenu={handleOpenFullMenu}
-            onSelectProduct={handleSelectProduct}
-          />
-
-          {/* About Section */}
-          <AboutSection />
-
-          {/* Contact & Delivery Section */}
-          <ContactSection config={config} />
-
-          {/* Footer */}
-          <Footer
-            config={config}
-            onNavigateToSection={handleNavigateToSection}
-            onOpenFullMenu={handleOpenFullMenu}
-          />
-
-          {/* Cart Drawer */}
-          <CartDrawer config={config} />
-
-          {/* Checkout Modal */}
-          <CheckoutModal
-            config={config}
-            onOrderSuccess={handleOrderSuccess}
-          />
-
-          {/* Order Tracker Modal */}
-          {activeOrder && (
-            <OrderTrackerModal
-              order={activeOrder}
-              config={config}
-              isOpen={isTrackerOpen}
-              onClose={() => setIsTrackerOpen(false)}
-            />
-          )}
-
-          {/* Floating Quick Tracker Pill (if customer has placed an order in current session) */}
-          {activeOrder && !isTrackerOpen && (
-            <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-40 animate-in slide-in-from-bottom-4">
-              <button
-                onClick={() => setIsTrackerOpen(true)}
-                className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-stone-950 px-4 py-3 sm:py-2.5 rounded-2xl shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2.5 font-semibold text-xs border border-amber-400 active:scale-95 transition touch-manipulation"
-              >
-                <Clock className="w-4 h-4 animate-spin text-stone-950 flex-shrink-0" />
-                <span className="truncate">Track Order #{activeOrder.id} ({activeOrder.status})</span>
-              </button>
-            </div>
-          )}
-
-        </div>
+        {/* Global Floating WhatsApp Action */}
+        <WhatsAppFloatingButton config={config} />
       </CartProvider>
     </LanguageProvider>
   );

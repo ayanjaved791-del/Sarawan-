@@ -87,16 +87,30 @@ export interface Translations {
   itemsSelected: string;
   cartEmpty: string;
   proceedToCheckout: string;
+  proceedToWhatsappOrder: string;
+  whatsappOrderTitle: string;
+  whatsappOrderSubtitle: string;
+  sendOrderViaWhatsapp: string;
+  orderSentTitle: string;
+  orderSentDesc: string;
+  reopenWhatsapp: string;
+  orderMoreFood: string;
   deliveryInfoTitle: string;
   fullName: string;
   phoneNumber: string;
+  phoneLabel: string;
+  phoneHelp: string;
   deliveryAddress: string;
+  addressHelp: string;
+  whatsappNotice: string;
   specialInstructions: string;
   confirmOrder: string;
   directToWhatsapp: string;
   orOrderDirectlyViaWhatsapp: string;
   totalPayable: string;
   deliveryFee: string;
+  copyOrderText: string;
+  copiedToClipboard: string;
   
   // Footer
   footerAbout: string;
@@ -124,7 +138,7 @@ const translations: Record<Language, Translations> = {
     heroTag: 'Authentic Pakistani Barbeque & Iron Wok Karahi',
     heroWelcome: 'Welcome to Sarawan',
     heroDescription: 'Experience the timeless taste of open-flame charcoal BBQ, slow-simmered Shinwari & Desi Karahis, aromatic Biryanis, sizzling handis, and authentic fresh naan baked straight from our clay tandoor.',
-    heroOrderOnline: 'Order Online Now',
+    heroOrderOnline: 'Order on WhatsApp',
     heroViewMenu: 'View Full Menu',
     heroCallNow: 'Call Reception',
     
@@ -183,17 +197,31 @@ const translations: Record<Language, Translations> = {
     cartTitle: 'Your Order',
     itemsSelected: 'items selected',
     cartEmpty: 'Your food cart is empty. Please select dishes to order.',
-    proceedToCheckout: 'Proceed to Checkout',
+    proceedToCheckout: 'Order on WhatsApp',
+    proceedToWhatsappOrder: 'Order via WhatsApp',
+    whatsappOrderTitle: 'WhatsApp Delivery Order',
+    whatsappOrderSubtitle: 'Fresh hot delivery to your doorstep in Karachi (Cash on Delivery)',
+    sendOrderViaWhatsapp: 'Send Order on WhatsApp',
+    orderSentTitle: 'Order Sent to WhatsApp!',
+    orderSentDesc: 'Your order details have been loaded into WhatsApp! Please tap Send in WhatsApp to complete your order with the Sarawan team.',
+    reopenWhatsapp: 'Re-open WhatsApp Chat',
+    orderMoreFood: 'Order More Dishes',
     deliveryInfoTitle: 'Delivery Information',
     fullName: 'Full Name',
     phoneNumber: 'Phone / Mobile Number',
+    phoneLabel: 'Your WhatsApp / Mobile Number',
+    phoneHelp: 'Your order will be sent from your WhatsApp number to Sarawan.',
     deliveryAddress: 'Complete Delivery Address',
+    addressHelp: 'House #, Street / Block, Landmark, Area (Karachi)',
+    whatsappNotice: 'After filling this form, your name, WhatsApp number, and delivery address will be sent directly to Sarawan WhatsApp (0335-3131686) from your logged-in WhatsApp account.',
     specialInstructions: 'Cooking / Delivery Instructions (Optional)',
-    confirmOrder: 'Confirm & Place Order',
-    directToWhatsapp: 'Direct to WhatsApp Order',
-    orOrderDirectlyViaWhatsapp: 'Or Order Directly Via WhatsApp',
+    confirmOrder: 'Confirm Order on WhatsApp',
+    directToWhatsapp: 'Send Order via WhatsApp',
+    orOrderDirectlyViaWhatsapp: 'Order Directly Via WhatsApp',
     totalPayable: 'Total Payable on Delivery',
     deliveryFee: 'Standard Delivery Fee',
+    copyOrderText: 'Copy Order Text',
+    copiedToClipboard: 'Order text copied to clipboard!',
     
     footerAbout: 'Serving the finest authentic charcoal-grilled BBQ, signature Balochi Tikkas, hand-ground Karahis, and aromatic Biryanis. Fresh ingredients, zero compromise on hygiene.',
     quickNav: 'Quick Navigation',
@@ -218,7 +246,7 @@ const translations: Record<Language, Translations> = {
     heroTag: 'اصلی پاکستانی کوئلہ باربی کیو اور شنواری کڑاہی',
     heroWelcome: 'سروان فاسٹ فوڈ میں خوش آمدید',
     heroDescription: 'دہکتے کوئلوں پر تیار خوشبودار باربی کیو، دیسی گھی والی شنواری اور نمکین کڑاہیاں، ذائقہ دار بریانی، اور تندور کی تازہ گرم روٹیاں۔',
-    heroOrderOnline: 'ابھی آن لائن آرڈر کریں',
+    heroOrderOnline: 'واٹس ایپ پر آرڈر کریں',
     heroViewMenu: 'مکمل مینو دیکھیں',
     heroCallNow: 'ریسیپشن پر کال کریں',
     
@@ -277,17 +305,31 @@ const translations: Record<Language, Translations> = {
     cartTitle: 'آپ کا آرڈر',
     itemsSelected: 'کھانے منتخب کیے گئے',
     cartEmpty: 'آپ کا کارٹ خالی ہے۔ براہ کرم کھانے منتخب کریں۔',
-    proceedToCheckout: 'آرڈر فائنل کریں (چیک آؤٹ)',
+    proceedToCheckout: 'واٹس ایپ پر آرڈر کریں',
+    proceedToWhatsappOrder: 'واٹس ایپ پر آرڈر کریں',
+    whatsappOrderTitle: 'واٹس ایپ ڈیلیوری آرڈر',
+    whatsappOrderSubtitle: 'کراچی میں آپ کی دہلیز تک گرما گرم کھانا (کیش آن ڈیلیوری)',
+    sendOrderViaWhatsapp: 'آرڈر واٹس ایپ پر بھیجیں',
+    orderSentTitle: 'آرڈر واٹس ایپ پر بھیج دیا گیا!',
+    orderSentDesc: 'آپ کے آرڈر کی تفصیلات واٹس ایپ پر لوڈ ہو چکی ہیں۔ براہ کرم واٹس ایپ میں Send کا بٹن دبا کر آرڈر مکمل کریں۔',
+    reopenWhatsapp: 'دوبارہ واٹس ایپ چیٹ کھولیں',
+    orderMoreFood: 'مزید کھانے آرڈر کریں',
     deliveryInfoTitle: 'ڈیلیوری کی معلومات',
     fullName: 'پورا نام',
     phoneNumber: 'فون / موبائل نمبر',
+    phoneLabel: 'آپ کا واٹس ایپ / موبائل نمبر',
+    phoneHelp: 'یہ آرڈر آپ کے لاگ اِن واٹس ایپ سے سروان کے واٹس ایپ پر جائے گا۔',
     deliveryAddress: 'گھر کا مکمل پتہ',
+    addressHelp: 'مکان نمبر، گلی / بلاک، قریبی نشانی، علاقہ (کراچی)',
+    whatsappNotice: 'فارم بھرنے کے بعد آپ کا نام، واٹس ایپ نمبر، اور ڈیلیوری ایڈریس خود بخود آپ کے لاگ اِن واٹس ایپ سے سروان کے واٹس ایپ (0335-3131686) پر چلا جائے گا۔',
     specialInstructions: 'کھانے کے بارے میں خاص ہدایات (اختیاری)',
-    confirmOrder: 'آرڈر کنفرم کریں (کیش آن ڈیلیوری)',
-    directToWhatsapp: 'براہِ راست واٹس ایپ آرڈر',
-    orOrderDirectlyViaWhatsapp: 'یا واٹس ایپ کے ذریعے آرڈر کریں',
+    confirmOrder: 'واٹس ایپ پر آرڈر بھیجیں',
+    directToWhatsapp: 'واٹس ایپ پر بھیجیں',
+    orOrderDirectlyViaWhatsapp: 'براہِ راست واٹس ایپ آرڈر',
     totalPayable: 'وصولی کے وقت واجب الادا رقم',
     deliveryFee: 'معیاری ڈیلیوری چارجز',
+    copyOrderText: 'آرڈر ٹیکسٹ کاپی کریں',
+    copiedToClipboard: 'آرڈر ٹیکسٹ کاپی ہو گیا!',
     
     footerAbout: 'اصلی کوئلہ باربی کیو، مٹن و چکن شنواری کڑاہی، ہانڈی اور روغنی نان۔ صفائی اور حلال معیار پر کوئی سمجھوتہ نہیں۔',
     quickNav: 'اہم لنکس',

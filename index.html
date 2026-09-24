@@ -3,11 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        function isWsError(err) {
+          var str = '';
+          try {
+            str = String((err && (err.message || err.reason || err.stack || err)) || '');
+          } catch (e) {}
+          return /websocket|ws:/i.test(str) || str.indexOf('closed without opened') !== -1;
+        }
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isWsError(event.reason)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+        window.addEventListener('error', function(event) {
+          if (isWsError(event.error || event.message)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
     <title>Sarawan - Authentic Dining & Online Ordering</title>
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
-    <meta name="description" content="Official website and real-time online ordering system for Sarawan with live receptionist dispatch and order management." />
+    <meta name="description" content="Official website and online ordering system for Sarawan authentic dining, fast food, and doorstep delivery." />
     <meta property="og:title" content="Sarawan - Authentic Dining & Online Ordering" />
-    <meta property="og:description" content="Official website and real-time online ordering system for Sarawan with live receptionist dispatch and order management." />
+    <meta property="og:description" content="Official website and online ordering system for Sarawan authentic dining, fast food, and doorstep delivery." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">

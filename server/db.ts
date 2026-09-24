@@ -1,10 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 import { MenuItem, Order, RestaurantConfig, OrderStatus } from '../src/types';
 import { INITIAL_MENU, DEFAULT_CONFIG } from '../src/data/initialMenu';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Determine data directory (use /tmp/sarawan_data on Vercel/serverless environments where root is read-only)
+const BASE_DATA_DIR = process.env.VERCEL ? path.join('/tmp', 'sarawan_data') : path.join(process.cwd(), 'data');
+const DATA_DIR = BASE_DATA_DIR;
 const MENU_FILE = path.join(DATA_DIR, 'menu.json');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');

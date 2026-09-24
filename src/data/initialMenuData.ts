@@ -1,4 +1,4 @@
-[
+export const INITIAL_MENU_ITEMS = [
   {
     "id": "chicken-biryani",
     "name": "Chicken Biryani (Half kg)",
@@ -1903,4 +1903,4 @@
     "available": true,
     "image": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80"
   }
-]
+] as const;

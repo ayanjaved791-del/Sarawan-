@@ -14,5 +14,5 @@ export const DEFAULT_CONFIG: RestaurantConfig = {
   currency: 'Rs.',
 };
 
-export const INITIAL_CATEGORIES = EXACT_SARAWAN_CATEGORIES;
+export const INITIAL_CATEGORIES: string[] = [...EXACT_SARAWAN_CATEGORIES];
 export const INITIAL_MENU = EXACT_SARAWAN_MENU;
