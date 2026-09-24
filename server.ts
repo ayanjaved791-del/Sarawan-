@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { INITIAL_MENU_ITEMS } from './src/data/initialMenuData';
+import { INITIAL_MENU_ITEMS } from './src/data/initialMenuData.ts';
 
 dotenv.config();
 
